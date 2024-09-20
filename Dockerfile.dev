@@ -1,0 +1,20 @@
+# Set node.js image
+FROM node:20.9.0-alpine
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set the working directory in the container.
+WORKDIR /usr/src/app
+
+# Copy package.json and pnpm-lock.yaml to install dependencies.
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies using pnpm
+RUN pnpm install
+
+# Expose the port your Node.js app runs on.
+EXPOSE 3000
+
+# Use nodemon to run the app for development.
+CMD ["pnpm dlx", "nodemon", "-L", "src/index.js"]
