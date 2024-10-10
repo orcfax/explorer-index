@@ -15,34 +15,40 @@ export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<
     // Loop over the active feeds and either create or update them in the stored feeds
     const processedFeedIds = new Set<string>();
     for (const activeFeed of activeFeeds.feeds) {
-      const feed: Omit<Feed, 'id'> = {
-        network: network.id,
-        feed_id: `${activeFeed.type}/${activeFeed.label}/3`,
-        type: activeFeed.type,
-        name: activeFeed.label,
-        version: 3,
-        status: 'active',
-        source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
-        funding_type: activeFeed.status,
-        calculation_method: activeFeed.calculation,
-        heartbeat_interval: activeFeed.interval,
-        deviation: activeFeed.deviation
-      };
-
-      const existingFeed = storedFeeds.find((feed) => feed.feed_id === feed.feed_id);
+      const feed_id = `${activeFeed.type}/${activeFeed.label}/3`;
+      const existingFeed = storedFeeds.find((feed) => feed.feed_id === feed_id);
 
       if (existingFeed) {
-        console.info(`Updating feed for ${network.name}: ${existingFeed.feed_id}`);
+        console.info(`Updating ${network.name} feed: ${feed_id}`);
         await updateFeed({
-          ...feed,
-          id: existingFeed.id
+          id: existingFeed.id,
+          type: activeFeed.type,
+          name: activeFeed.label,
+          status: 'active',
+          source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
+          funding_type: activeFeed.status,
+          calculation_method: activeFeed.calculation,
+          heartbeat_interval: activeFeed.interval,
+          deviation: activeFeed.deviation
         });
       } else {
-        console.info(`Creating new feed for ${network.name}: ${feed.feed_id}`);
-        await createFeed(feed);
+        console.info(`Indexing ${network.name} feed: ${feed_id}`);
+        await createFeed({
+          network: network.id,
+          feed_id,
+          type: activeFeed.type,
+          name: activeFeed.label,
+          version: 3,
+          status: 'active',
+          source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
+          funding_type: activeFeed.status,
+          calculation_method: activeFeed.calculation,
+          heartbeat_interval: activeFeed.interval,
+          deviation: activeFeed.deviation
+        });
       }
 
-      processedFeedIds.add(feed.feed_id);
+      processedFeedIds.add(feed_id);
     }
 
     // Mark any stored feeds that are not in the active feeds list as inactive
