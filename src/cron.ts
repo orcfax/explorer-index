@@ -19,8 +19,9 @@ export async function initIndexSyncCronJob(networks: Network[]) {
     start: true,
     onTick: async function () {
       console.info('Syncing index...');
-      try {
-        for (const network of cachedNetworks) {
+
+      for (const network of cachedNetworks) {
+        try {
           console.info(`Syncing feeds for ${network.name}...`);
           const activeFeeds = await syncFeeds(network, cachedFeeds);
           cachedFeeds = activeFeeds;
@@ -78,9 +79,9 @@ export async function initIndexSyncCronJob(networks: Network[]) {
               networkInCache.last_checkpoint_slot = queryState.lastCheckpointSlot;
             }
           }
+        } catch (error) {
+          logError(`An error occurred while syncing the index for network ${network.name}:`, error);
         }
-      } catch (error) {
-        logError('An error occurred while syncing the index', error);
       }
     }
   });
