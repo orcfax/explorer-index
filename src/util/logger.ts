@@ -42,16 +42,19 @@ export async function logError(message: string, error?: unknown) {
   }
 }
 
-// Send message to Discord webhook
 async function sendMessageToDiscord(message: string) {
   try {
-    await fetch(DISCORD_WEBHOOK_URL, {
+    const res = await fetch(DISCORD_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: `${process.env.NODE_ENV.toUpperCase()}: ${JSON.stringify({ content: message })}`
+      body: JSON.stringify({
+        content: `${process.env.NODE_ENV.toUpperCase()}: ${message}`
+      })
     });
+
+    if (!res.ok) throw new Error(`Failed to send error to Discord webhook: ${res.statusText}`);
   } catch (error) {
     logger.error(`Failed to send error to Discord webhook: ${error}`);
   }
