@@ -71,6 +71,7 @@ export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<
 
 export async function fetchActiveFeeds(network: Network): Promise<ActiveFeeds> {
   // Required to get around GitHub raw caching issues
-  const githubCacheBuster = Math.floor(Date.now() / 1000);
-  return fetchAndParse<ActiveFeeds>(`${network.active_feeds_url}?token=${githubCacheBuster}`, ActiveFeedsSchema);
+  // const githubCacheBuster = Math.floor(Date.now() / 1000);
+  // return fetchAndParse<ActiveFeeds>(`${network.active_feeds_url}?token=${githubCacheBuster}`, ActiveFeedsSchema);
+  return fetchAndParse<ActiveFeeds>(`${network.active_feeds_url}`, ActiveFeedsSchema);
 }
