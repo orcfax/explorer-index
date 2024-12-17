@@ -62,7 +62,6 @@ export const NodeSchema = z.object({
 export const SourceSchema = z.object({
   id: z.string(),
   network: z.string(),
-  identifier: z.string(),
   recipient: z.string(),
   sender: z.string(),
   name: z.string(),
