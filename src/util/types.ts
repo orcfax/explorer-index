@@ -66,7 +66,6 @@ export const SourceSchema = z.object({
   sender: z.string(),
   name: z.string(),
   type: z.enum(['CEX API', 'DEX LP']),
-  description: z.string().optional(),
   website: z.string().optional(),
   image_path: z.string().optional(),
   background_color: z.string().optional(),
