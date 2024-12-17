@@ -1,23 +1,81 @@
 import { z } from 'zod';
 
+// Database Collection Schemas
+export type Node = z.infer<typeof NodeSchema>;
 export type Feed = z.infer<typeof FeedSchema>;
 export type Policy = z.infer<typeof PolicySchema>;
+export type Source = z.infer<typeof SourceSchema>;
 export type Network = z.infer<typeof NetworkSchema>;
-export type KupoDatum = z.infer<typeof KupoDatumSchema>;
 export type DBNetwork = z.infer<typeof DBNetworkSchema>;
-export type KupoMatch = z.infer<typeof KupoMatchSchema>;
-export type ActiveFeeds = z.infer<typeof ActiveFeedsSchema>;
 export type NetworkSeed = z.infer<typeof NetworkSeedSchema>;
-export type KupoMatches = z.infer<typeof KupoMatchesSchema>;
 export type FactStatement = z.infer<typeof FactStatementSchema>;
-export type KupoErrorResponse = z.infer<typeof KupoErrorResponseSchema>;
-export type CurrencyPairDatum = z.infer<typeof CurrencyPairDatumSchema>;
-export type KupoDatumResponse = z.infer<typeof KupoDatumResponseSchema>;
-export type KupoRequestOptions = z.infer<typeof KupoRequestOptionsSchema>;
-export type KupoMatchesResponse = z.infer<typeof KupoMatchesResponseSchema>;
-export type TransactionMetadata = z.infer<typeof TransactionMetadataSchema>;
-export type KupoMetadataResponse = z.infer<typeof KupoMetadataResponseSchema>;
-export type KupoMatchesByTransaction = z.infer<typeof KupoMatchesByTransactionSchema>;
+
+export const DBNetworkSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  fact_statement_pointer: z.string(),
+  script_token: z.string(),
+  arweave_wallet_address: z.string(),
+  arweave_system_identifier: z.string(),
+  cardano_smart_contract_address: z.string(),
+  chain_index_base_url: z.string(),
+  active_feeds_url: z.string(),
+  block_explorer_base_url: z.string(),
+  arweave_explorer_base_url: z.string(),
+  last_block_hash: z.string(),
+  last_checkpoint_slot: z.number(),
+  zero_time: z.number(),
+  zero_slot: z.number(),
+  slot_length: z.number(),
+  is_enabled: z.boolean()
+});
+
+export const PolicySchema = z.object({
+  id: z.string(),
+  network: z.union([z.string(), DBNetworkSchema]),
+  policy_id: z.string(),
+  starting_slot: z.number(),
+  starting_block_hash: z.string(),
+  starting_date: z.coerce.date()
+});
+
+export const NetworkSchema = DBNetworkSchema.extend({
+  policies: z.array(PolicySchema)
+});
+
+export const NetworkSeedSchema = NetworkSchema.omit({ policies: true, id: true }).extend({
+  ignore_policies: z.array(z.string())
+});
+
+export const NodeSchema = z.object({
+  id: z.string(),
+  node_urn: z.string(),
+  network: z.union([z.string(), DBNetworkSchema]),
+  status: z.enum(['active', 'inactive']),
+  type: z.enum(['federated', 'decentralized', 'itn']),
+  name: z.string(),
+  address_locality: z.string().optional(),
+  address_region: z.string().optional(),
+  geo_coordinates: z.string().optional()
+});
+
+export const SourceSchema = z.object({
+  id: z.string(),
+  network: z.string(),
+  identifier: z.string(),
+  recipient: z.string(),
+  sender: z.string(),
+  name: z.string(),
+  type: z.enum(['CEX API', 'DEX LP']),
+  description: z.string().optional(),
+  website: z.string().optional(),
+  image_path: z.string().optional(),
+  background_color: z.string().optional(),
+  // For CEX sources, assetPairValue is used. For DEX sources base and quote will be used.
+  baseAssetValue: z.number().optional(),
+  quoteAssetValue: z.number().optional(),
+  assetPairValue: z.number().optional()
+});
 
 export const FactStatementSchema = z.object({
   id: z.string(),
@@ -37,11 +95,17 @@ export const FactStatementSchema = z.object({
   publication_date: z.coerce.date(),
   validation_date: z.coerce.date(),
   publication_cost: z.number(),
-  is_archived: z.boolean(),
-  system_identifier: z.string(),
-  system_version: z.string(),
-  package_version: z.string(),
-  storage_cost: z.number()
+  participating_nodes: z.union([z.array(z.string()), z.array(NodeSchema)]),
+  storage_cost: z.number(),
+  sources: z.union([z.array(z.string()), z.array(SourceSchema)]),
+  content_signature: z.string(),
+  collection_date: z.coerce
+    .date()
+    .nullable()
+    .catch(() => {
+      return null;
+    }),
+  is_archive_indexed: z.boolean().nullable()
 });
 
 export const FeedSchema = z.object({
@@ -59,7 +123,41 @@ export const FeedSchema = z.object({
   deviation: z.number()
 });
 
+// Active Feeds Schemas - Used for fetching active feeds from GitHub cer-feeds.json
+// Schema for the full list of active feeds
+export type ActiveFeeds = z.infer<typeof ActiveFeedsSchema>;
+
+export const ActiveFeedsSchema = z.object({
+  meta: z.object({
+    description: z.string(),
+    version: z.string()
+  }),
+  feeds: z.array(
+    z.object({
+      pair: z.string(),
+      label: z.string(),
+      interval: z.number(),
+      deviation: z.number(),
+      source: z.enum(['cex', 'dex']),
+      calculation: z.enum(['median', 'weighted mean']),
+      status: z.enum(['showcase', 'subsidized', 'paid']),
+      type: z.enum(['CER'])
+    })
+  )
+});
+
 // Kupo Schemas
+export type KupoDatum = z.infer<typeof KupoDatumSchema>;
+export type KupoMatch = z.infer<typeof KupoMatchSchema>;
+export type KupoMatches = z.infer<typeof KupoMatchesSchema>;
+export type KupoErrorResponse = z.infer<typeof KupoErrorResponseSchema>;
+export type CurrencyPairDatum = z.infer<typeof CurrencyPairDatumSchema>;
+export type KupoDatumResponse = z.infer<typeof KupoDatumResponseSchema>;
+export type KupoRequestOptions = z.infer<typeof KupoRequestOptionsSchema>;
+export type KupoMatchesResponse = z.infer<typeof KupoMatchesResponseSchema>;
+export type TransactionMetadata = z.infer<typeof TransactionMetadataSchema>;
+export type KupoMetadataResponse = z.infer<typeof KupoMetadataResponseSchema>;
+export type KupoMatchesByTransaction = z.infer<typeof KupoMatchesByTransactionSchema>;
 
 export const KupoErrorResponseSchema = z.object({
   hint: z.string()
@@ -228,59 +326,247 @@ export const CurrencyPairDatumSchema = z.object({
   inverse_value: z.number()
 });
 
-// Schema for the full list of active feeds
-export const ActiveFeedsSchema = z.object({
-  meta: z.object({
-    description: z.string(),
-    version: z.string()
+// Arweave and Archive Schemas
+export type Tag = z.infer<typeof TagSchema>;
+export type TagFilters = z.infer<typeof TagFiltersSchema>;
+export type ArweaveEdge = z.infer<typeof ArweaveEdgeSchema>;
+export type ArchiveData = z.infer<typeof ArchiveDataSchema>;
+export type ValidationFile = z.infer<typeof ValidationFileSchema>;
+export type ArweaveResponse = z.infer<typeof ArweaveResponseSchema>;
+export type DEXValidationFile = z.infer<typeof DEXValidationFileSchema>;
+export type FactSourceMessage = z.infer<typeof FactSourceMessageSchema>;
+export type CEXValidationFile = z.infer<typeof CEXValidationFileSchema>;
+export type ArweaveTransaction = z.infer<typeof ArweaveTransactionSchema>;
+export type ArweavePageResponse = z.infer<typeof ArweavePageResponseSchema>;
+export type ArweaveTransactionsResponse = z.infer<typeof ArweaveTransactionsResponseSchema>;
+
+export interface ArchivedFile {
+  name: string;
+  fileName: string;
+  extension: string;
+  content: string | object;
+}
+
+const TagSchema = z.object({
+  name: z.enum([
+    'System Identifier',
+    'System Name',
+    'System Version',
+    'Package Version',
+    'Feed Name',
+    'Feed Type',
+    'Fact Datum URN',
+    'Fact Datum Identifier',
+    'Fact Description',
+    'Fact Datum Value',
+    'Fact Validation Date',
+    'Source Organization',
+    'Content-Type'
+  ]),
+  value: z.string()
+});
+
+const TagFiltersSchema = z.array(z.object({ name: z.string(), values: z.array(z.string()) }));
+
+export const ArweaveEdgeSchema = z.object({
+  cursor: z.string(),
+  node: z.object({
+    id: z.string(),
+    tags: z.array(TagSchema)
+  })
+});
+
+export const ArweaveResponseSchema = z.object({
+  transactions: z.object({
+    pageInfo: z.object({
+      hasNextPage: z.boolean()
+    }),
+    edges: z.array(ArweaveEdgeSchema)
+  })
+});
+
+export const ArweavePageResponseSchema = z.object({
+  data: ArweaveResponseSchema.nullable(),
+  nextPageCursor: z.string().nullable(),
+  isRateLimited: z.boolean()
+});
+
+export const ArchiveDataSchema = z.object({
+  node: NodeSchema.omit({ id: true, network: true }),
+  sources: z.array(SourceSchema),
+  fact: FactStatementSchema.pick({
+    content_signature: true,
+    collection_date: true
   }),
-  feeds: z.array(
-    z.object({
-      pair: z.string(),
-      label: z.string(),
-      interval: z.number(),
-      deviation: z.number(),
-      source: z.enum(['cex', 'dex']),
-      calculation: z.enum(['median', 'weighted mean']),
-      status: z.enum(['showcase', 'subsidized', 'paid']),
-      type: z.enum(['CER'])
-    })
-  )
+  is_archive_indexed: z.boolean().nullable()
 });
 
-export const DBNetworkSchema = z.object({
-  id: z.string(),
+export const ArweaveTransactionSchema = z.object({
+  cursor: z.string(),
+  node: z.object({
+    id: z.string(),
+    tags: z.array(TagSchema)
+  })
+});
+
+export const ArweaveTransactionsResponseSchema = z.object({
+  transactions: z.object({
+    pageInfo: z.object({
+      hasNextPage: z.boolean()
+    }),
+    edges: z.array(ArweaveTransactionSchema)
+  })
+});
+
+export const FactSourceMessageSchema = z.object({
+  '@context': z.literal('https://schema.org'),
+  type: z.literal('Message'),
   name: z.string(),
-  fact_statement_pointer: z.string(),
-  script_token: z.string(),
-  arweave_wallet_address: z.string(),
-  arweave_system_identifier: z.string(),
-  cardano_smart_contract_address: z.string(),
-  chain_index_base_url: z.string(),
-  active_feeds_url: z.string(),
-  block_explorer_base_url: z.string(),
-  arweave_explorer_base_url: z.string(),
-  last_block_hash: z.string(),
-  last_checkpoint_slot: z.number(),
-  zero_time: z.number(),
-  zero_slot: z.number(),
-  slot_length: z.number(),
-  is_enabled: z.boolean()
+  isBasedOn: z.object({
+    '@type': z.literal('MediaObject'),
+    name: z.literal('Exchange data'),
+    additionalType: z.union([z.literal('Central Exchange Data'), z.literal('Decentralized Exchange Data')]),
+    description: z.string()
+  }),
+  sender: z.string(),
+  recipient: z.string(),
+  identifier: z.string(),
+  dateReceived: z.string()
 });
 
-export const PolicySchema = z.object({
-  id: z.string(),
-  network: z.union([z.string(), DBNetworkSchema]),
-  policy_id: z.string(),
-  starting_slot: z.number(),
-  starting_block_hash: z.string(),
-  starting_date: z.coerce.date()
+export const CollectionEventSchema = z.object({
+  '@type': z.literal('Event'),
+  description: z.string(),
+  startDate: z.string(),
+  recordedIn: z.object({
+    '@type': z.literal('CreativeWork'),
+    description: z.object({
+      '@type': z.literal('TextObject'),
+      comment: z.string(),
+      sha256: z.string()
+    }),
+    hasPart: z.tuple([
+      z.object({
+        '@type': z.literal('CreativeWork'),
+        description: z.literal('collecting timestamp'),
+        text: z.string()
+      }),
+      z.object({
+        '@type': z.literal('CreativeWork'),
+        description: z.string().startsWith('data points for'),
+        text: z.array(z.string())
+      }),
+      z.object({
+        '@type': z.literal('CreativeWork'),
+        description: z.literal('node identifier (uuid)'),
+        text: z.string()
+      })
+    ])
+  })
 });
 
-export const NetworkSchema = DBNetworkSchema.extend({
-  policies: z.array(PolicySchema)
+export const ValidationFileSchema = z.object({
+  '@context': z.literal('https://schema.org'),
+  type: z.literal('MediaObject'),
+  identifier: z.string(),
+  isBasedOn: z.object({
+    '@type': z.literal('MediaObject'),
+    name: z.string(),
+    identifier: z.string()
+  }),
+  contributor: z.object({
+    '@type': z.literal('Organization'),
+    name: z.string(),
+    locationCreated: z.object({
+      address: z.object({
+        '@type': z.literal('PostalAddress'),
+        addressLocality: z.string(),
+        addressRegion: z.string(),
+        geo: z.string()
+      })
+    })
+  }),
+  additionalType: z.tuple([CollectionEventSchema, z.unknown()])
 });
 
-export const NetworkSeedSchema = NetworkSchema.omit({ policies: true, id: true }).extend({
-  ignore_policies: z.array(z.string())
+export const DEXValidationFileSchema = ValidationFileSchema.extend({
+  additionalType: z.tuple([
+    CollectionEventSchema,
+    z.object({
+      '@type': z.literal('Event'),
+      description: z.string().startsWith('average price is determined by dividing total volume of'),
+      startDate: z.string(),
+      about: z.object({
+        '@type': z.literal('Observation'),
+        measurementMethod: z.tuple([z.string().startsWith('volume/liquidity average sum(valueReference[1])')]),
+        value: z.coerce.number(),
+        valueReference: z.array(
+          z
+            .string()
+            .transform((str) => JSON.parse(str))
+            .pipe(z.array(z.number()))
+        )
+      })
+    })
+  ])
+});
+
+export const CEXValidationFileSchema = ValidationFileSchema.extend({
+  additionalType: z.tuple([
+    CollectionEventSchema,
+    z.object({
+      '@type': z.literal('Event'),
+      description: z.literal('selection of median value from collected node data'),
+      startDate: z.string(),
+      about: z.object({
+        '@type': z.literal('StatisticalVariable'),
+        measurementMethod: z.literal(
+          'median calculation of a minimum of three data sources from the selected collector node'
+        ),
+        measurementTechnique: z.array(
+          z.object({
+            '@type': z.literal('PropertyValue'),
+            name: z.string(),
+            value: z.string()
+          })
+        ),
+        variableMeasured: z.object({
+          '@type': z.literal('Observation'),
+          measurementMethod: z.literal('median value'),
+          value: z.coerce.number(),
+          valueReference: z.array(z.coerce.number())
+        })
+      })
+    })
+  ])
+});
+
+export const BagInfoSchema = z.object({
+  'Bag-Software-Agent': z.string(),
+  'Bagging-Date': z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format'
+  }),
+  'Epoch-Day': z.string().transform(Number),
+  'Epoch-Hour': z.string().transform(Number),
+  'Epoch-Month': z.string().transform(Number),
+  'Epoch-Week': z.string().transform(Number),
+  'Epoch-Year': z.string().transform(Number),
+  'Fact-Datum-Identifier': z.string().uuid(),
+  'Fact-Datum-URN': z.string(),
+  'Fact-Datum-Value': z.string().transform(Number),
+  'Fact-Description': z.string(),
+  'Fact-Validation-Date': z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format'
+  }),
+  'Feed-ID': z.string(),
+  'Feed-Name': z.string(),
+  'Feed-Type': z.string(),
+  'Package-Version': z.string().transform(Number),
+  'Packaging-Agent': z.string(),
+  'Payload-Oxum': z.string(),
+  'Source-Organization': z.string(),
+  'System-Identifier': z.string(),
+  'System-Name': z.string(),
+  'System-Version': z.string(),
+  'Unix-Time': z.string().transform(Number)
 });

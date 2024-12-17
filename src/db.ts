@@ -1,24 +1,32 @@
 import { z } from 'zod';
 import {
   Feed,
+  Node,
   Policy,
+  Source,
   Network,
   DBNetwork,
+  NodeSchema,
   FeedSchema,
+  SourceSchema,
   PolicySchema,
   FactStatement,
   NetworkSchema,
   DBNetworkSchema,
   FactStatementSchema
 } from './util/types.js';
+import { sub } from 'date-fns';
 import { logError } from './util/logger.js';
 import PocketBase, { ClientResponseError } from 'pocketbase';
+import { format as formatZonedTime, toZonedTime } from 'date-fns-tz';
 
 // Setup DB connection
 const db = new PocketBase(process.env.DB_HOST);
 await db.admins.authWithPassword(process.env.DB_EMAIL, process.env.DB_PASSWORD);
 
-export async function indexFactStatements(facts: Omit<FactStatement, 'id'>[]): Promise<void> {
+export async function indexFactStatements(
+  facts: Omit<FactStatement, 'id' | 'participating_nodes' | 'sources' | 'content_signature' | 'collection_date'>[]
+): Promise<void> {
   const orderedFacts = facts.sort((a, b) => b.validation_date.getTime() - a.validation_date.getTime());
 
   let successfulCount = 0;
@@ -264,5 +272,105 @@ export async function fetchAndParse<T>(
   } catch (error) {
     logError(`Error fetching or parsing data from ${url}`, error);
     throw error;
+  }
+}
+
+export async function getAllNodes(network: Network): Promise<Node[]> {
+  try {
+    const response = await db.collection('nodes').getFullList({
+      filter: `network = "${network.id}"`
+    });
+
+    const nodes = z.array(NodeSchema).parse(response);
+
+    return nodes;
+  } catch (error) {
+    logError('Error retrieving node records', error);
+    return [];
+  }
+}
+
+export async function createNode(node: Omit<Node, 'id'>): Promise<Node | null> {
+  try {
+    const newNode = await db.collection('nodes').create<Node>(node);
+    return NodeSchema.parse(newNode);
+  } catch (error) {
+    logError('Error adding node record', error);
+    return null;
+  }
+}
+
+export async function getAllSources(network: Network): Promise<Source[]> {
+  try {
+    const response = await db.collection('sources').getFullList({
+      filter: `network = "${network.id}"`
+    });
+
+    const sources = z.array(SourceSchema).parse(response);
+
+    return sources;
+  } catch (error) {
+    logError('Error retrieving source records', error);
+    return [];
+  }
+}
+
+export async function createSource(source: Omit<Source, 'id'>): Promise<Source | null> {
+  try {
+    const newSource = await db.collection('sources').create<Source>(source);
+    return SourceSchema.parse(newSource);
+  } catch (error) {
+    logError('Error adding source record', error);
+    return null;
+  }
+}
+
+export async function updateFactStatement(id: string, fact: Partial<FactStatement>) {
+  try {
+    await db.collection('facts').update(id, { ...fact });
+  } catch (error) {
+    logError('Error updating fact statement nodes', error);
+  }
+}
+
+export async function getAllUnarchivedFacts(network: Network): Promise<FactStatement[]> {
+  try {
+    const now = new Date();
+    const isoString = now.toISOString();
+    const timeString = isoString.split('T')[1].slice(0, 12) + 'Z';
+
+    const getFormattedDateFilter = (hours: number) => {
+      const newDate = sub(now, {
+        hours
+      });
+      return formatZonedTime(toZonedTime(newDate, 'UTC'), 'yyyy-MM-dd', { timeZone: 'UTC' }) + ' ' + timeString;
+    };
+    const oneHourAgo = getFormattedDateFilter(1);
+
+    const response = await db.collection('facts').getFullList({
+      filter: `network = "${network.id}" && is_archive_indexed = false && validation_date >= "${oneHourAgo}"`
+    });
+
+    const facts = z.array(FactStatementSchema).parse(response);
+
+    return facts;
+  } catch (error) {
+    logError('Error retrieving fact records', error);
+    return [];
+  }
+}
+
+export async function getAllFactStatements(network: Network): Promise<FactStatement[]> {
+  try {
+    const response = await db.collection('facts').getFullList({
+      filter: `network = "${network.id}"`
+    });
+
+    const facts = z.array(FactStatementSchema).parse(response);
+
+    return facts;
+  } catch (error) {
+    logError('Error retrieving fact records', error);
+    return [];
   }
 }
