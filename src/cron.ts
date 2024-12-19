@@ -1,8 +1,9 @@
 import { CronJob } from 'cron';
 import { syncFeeds } from './util/feeds.js';
 import { logError } from './util/logger.js';
-import { getLastIndexedFact } from './db.js';
+import { indexArchives } from './util/archives.js';
 import { ActiveFeeds, Network } from './util/types.js';
+import { getAllUnarchivedFacts, getLastIndexedFact } from './db.js';
 import { getOrCreateLatestPolicy, syncFactStatements } from './kupo.js';
 
 // Scan for fact statements to index and sync feeds if necessary
@@ -79,6 +80,11 @@ export async function initIndexSyncCronJob(networks: Network[]) {
               networkInCache.last_checkpoint_slot = queryState.lastCheckpointSlot;
             }
           }
+
+          const unarchived = await getAllUnarchivedFacts(network);
+          await indexArchives(network, unarchived);
+
+          console.info(`Finished syncing index for ${network.name}...`);
         } catch (error) {
           logError(`An error occurred while syncing the index for network ${network.name}:`, error);
         }

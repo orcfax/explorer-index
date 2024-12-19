@@ -81,6 +81,7 @@ export async function populateIndex(network: Network) {
 
       if (response === null) return;
 
+      // TODO: Index historical archives
       await parseAndIndexMatches(network, response.transactions);
 
       currentSlot = queryEndSlot;
@@ -339,7 +340,10 @@ export async function parseAndIndexMatches(network: Network, matchesByTx: KupoMa
   const feeds = await fetchFeeds(network);
 
   for (const [txId, matches] of matchesByTx) {
-    const factStatements: Omit<FactStatement, 'id'>[] = [];
+    const factStatements: Omit<
+      FactStatement,
+      'id' | 'participating_nodes' | 'sources' | 'content_signature' | 'collection_date'
+    >[] = [];
 
     // TODO: Unsure if all slots will be the same or not
     if (matches.some((tx) => tx.created_at.slot_no !== matches[0].created_at.slot_no))
@@ -412,11 +416,8 @@ export async function parseAndIndexMatches(network: Network, matchesByTx: KupoMa
         publication_cost: match.value.coins / 1_000_000,
         output_index: match.output_index,
         statement_hash,
-        system_identifier: '',
-        system_version: '',
-        package_version: '',
         storage_cost: 0,
-        is_archived: false
+        is_archive_indexed: false
       });
     }
 

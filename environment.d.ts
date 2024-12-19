@@ -8,6 +8,8 @@ declare global {
       MAINNET_CHAIN_INDEX_BASE_URL: string;
       PREVIEW_CHAIN_INDEX_BASE_URL: string;
       DISCORD_WEBHOOK_URL: string;
+      PRIMARY_ARWEAVE_ENDPOINT: string;
+      SECONDARY_ARWEAVE_ENDPOINT: string;
     }
   }
 }
