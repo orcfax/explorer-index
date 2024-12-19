@@ -81,8 +81,10 @@ export async function initIndexSyncCronJob(networks: Network[]) {
             }
           }
 
-          const unarchived = await getAllUnarchivedFacts(network);
-          await indexArchives(network, unarchived);
+          if (network.name === 'mainnet') {
+            const unarchived = await getAllUnarchivedFacts(network);
+            await indexArchives(network, unarchived);
+          }
 
           console.info(`Finished syncing index for ${network.name}...`);
         } catch (error) {
