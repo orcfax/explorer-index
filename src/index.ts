@@ -5,7 +5,7 @@ import { initIndexSyncCronJob } from './cron.js';
 import { getNetworks, populateIndex } from './kupo.js';
 
 try {
-  console.info('Booting up Explorer Index...');
+  console.info('\nBooting up Explorer Index...');
 
   // Setup Networks
   const networks = await getNetworks();

@@ -20,7 +20,7 @@ import { createNode, createSource, getAllNodes, getAllSources, updateFactStateme
 export async function indexArchives(network: Network, facts: FactStatement[]) {
   if (facts.length < 1) return;
 
-  console.info('Indexing batch of archives from Arweave...');
+  console.info(`\n* * Indexing batch of archives from Arweave for ${network.name}...`);
 
   const cachedNodes = await getAllNodes(network);
   const cachedSources = await getAllSources(network);
@@ -67,7 +67,7 @@ export async function indexArchives(network: Network, facts: FactStatement[]) {
   // Filter out null results
   const successfulArchives = results.filter(Boolean);
 
-  console.info(`Indexed archives for ${successfulArchives.length} of ${facts.length} facts.`);
+  console.info(`* * Indexed archives for ${successfulArchives.length} of ${facts.length} facts.`);
 }
 
 export async function getArchiveFiles(

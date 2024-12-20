@@ -43,9 +43,9 @@ import { syncFeeds } from './util/feeds.js';
 // Populate the index from scratch for a given network by
 // fetching time-based batches of matches from a Kupo instance
 export async function populateIndex(network: Network) {
-  console.info(`Populating index for ${network.name}...`);
+  console.info(`\nPopulating index for ${network.name}...`);
 
-  console.info(`Populating active feeds for ${network.name}...`);
+  console.info(`\nPopulating active feeds for ${network.name}...`);
   await syncFeeds(network);
 
   let lastCheckpointSlot;
@@ -53,7 +53,7 @@ export async function populateIndex(network: Network) {
   const policies = network.policies.sort((a, b) => a.starting_slot - b.starting_slot);
 
   for (const policy of policies) {
-    console.info(`Indexing facts for ${network.name} policy: ${policy.policy_id}...`);
+    console.info(`\nIndexing facts for ${network.name} policy: ${policy.policy_id}...`);
     const latestSlot = dateToSlot(new Date(), network);
     const originSlot = network.policies[0].starting_slot;
     let currentSlot = originSlot;

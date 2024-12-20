@@ -8,7 +8,7 @@ import { getOrCreateLatestPolicy, syncFactStatements } from './kupo.js';
 
 // Scan for fact statements to index and sync feeds if necessary
 export async function initIndexSyncCronJob(networks: Network[]) {
-  console.info('Initialized index sync cron job...');
+  console.info('\nInitialized index sync cron job...\n');
 
   const cachedNetworks = networks;
   let cachedFeeds: ActiveFeeds;
@@ -19,22 +19,21 @@ export async function initIndexSyncCronJob(networks: Network[]) {
     timeZone: 'UTC',
     start: true,
     onTick: async function () {
-      console.info('Syncing index...');
-
       for (const network of cachedNetworks) {
+        console.info(`\n* Syncing index for ${network.name}...`);
         try {
-          console.info(`Syncing feeds for ${network.name}...`);
+          console.info(`\n* * Syncing feeds for ${network.name}...`);
           const activeFeeds = await syncFeeds(network, cachedFeeds);
           cachedFeeds = activeFeeds;
 
-          console.info(`Syncing policies for ${network.name}...`);
+          console.info(`\n* * Syncing policies for ${network.name}...`);
           const networkInCache = cachedNetworks.find((n) => n.name === network.name);
           const currentPolicy = network.policies[network.policies.length - 1];
           const latestPolicy = await getOrCreateLatestPolicy(network);
           // If the policy has changed, sync the fact statements for the previous policy and then the latest policy
           if (currentPolicy.policy_id !== latestPolicy.policy_id) {
             console.info(
-              `Syncing fact statements for ${network.name} for the previous policy ID ${currentPolicy.policy_id}...`
+              `\n* * Syncing fact statements for ${network.name} for the previous policy ID ${currentPolicy.policy_id}...`
             );
             const lastIndexedBeforeChange = await getLastIndexedFact(network);
             const queryStatePrev = await syncFactStatements(network, {
@@ -57,7 +56,7 @@ export async function initIndexSyncCronJob(networks: Network[]) {
             network.last_block_hash = queryStatePrev.lastBlockHash;
             network.last_checkpoint_slot = queryStatePrev.lastCheckpointSlot;
 
-            console.info(`Syncing latest fact statements for ${network.name}...`);
+            console.info(`\n* * Syncing fact statements for ${network.name}...`);
             const lastIndexedAfterChange = await getLastIndexedFact(network);
             const queryStateLatest = await syncFactStatements(network, {
               lastBlockHash: lastIndexedAfterChange.block_hash,
@@ -71,7 +70,7 @@ export async function initIndexSyncCronJob(networks: Network[]) {
           }
           // Just sync the latest fact statements if the policy hasn't changed
           else {
-            console.info(`Syncing latest fact statements for ${network.name}...`);
+            console.info(`\n* * Syncing fact statements for ${network.name}...`);
             const queryState = await syncFactStatements(network);
 
             // Update network cache
@@ -86,7 +85,7 @@ export async function initIndexSyncCronJob(networks: Network[]) {
             await indexArchives(network, unarchived);
           }
 
-          console.info(`Finished syncing index for ${network.name}...`);
+          console.info(`\n* Finished syncing index for ${network.name}\n`);
         } catch (error) {
           logError(`An error occurred while syncing the index for network ${network.name}:`, error);
         }
