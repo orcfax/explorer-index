@@ -18,20 +18,7 @@ export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<
       const feed_id = `${activeFeed.type}/${activeFeed.label}/3`;
       const existingFeed = storedFeeds.find((feed) => feed.feed_id === feed_id);
 
-      if (existingFeed) {
-        console.info(`Updating ${network.name} feed: ${feed_id}`);
-        await updateFeed({
-          id: existingFeed.id,
-          type: activeFeed.type,
-          name: activeFeed.label,
-          status: 'active',
-          source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
-          funding_type: activeFeed.status,
-          calculation_method: activeFeed.calculation,
-          heartbeat_interval: activeFeed.interval,
-          deviation: activeFeed.deviation
-        });
-      } else {
+      if (!existingFeed) {
         console.info(`Indexing ${network.name} feed: ${feed_id}`);
         await createFeed({
           network: network.id,
@@ -39,6 +26,19 @@ export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<
           type: activeFeed.type,
           name: activeFeed.label,
           version: 3,
+          status: 'active',
+          source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
+          funding_type: activeFeed.status,
+          calculation_method: activeFeed.calculation,
+          heartbeat_interval: activeFeed.interval,
+          deviation: activeFeed.deviation
+        });
+      } else if (isFeedChanged(activeFeed, existingFeed)) {
+        console.info(`Updating ${network.name} feed: ${feed_id}`);
+        await updateFeed({
+          id: existingFeed.id,
+          type: activeFeed.type,
+          name: activeFeed.label,
           status: 'active',
           source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
           funding_type: activeFeed.status,
@@ -70,8 +70,16 @@ export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<
 }
 
 export async function fetchActiveFeeds(network: Network): Promise<ActiveFeeds> {
-  // Required to get around GitHub raw caching issues
-  // const githubCacheBuster = Math.floor(Date.now() / 1000);
-  // return fetchAndParse<ActiveFeeds>(`${network.active_feeds_url}?token=${githubCacheBuster}`, ActiveFeedsSchema);
   return fetchAndParse<ActiveFeeds>(`${network.active_feeds_url}`, ActiveFeedsSchema);
+}
+
+function isFeedChanged(activeFeed: ActiveFeeds['feeds'][number], storedFeed: Feed): boolean {
+  return (
+    activeFeed.label !== storedFeed.name ||
+    activeFeed.source.toUpperCase() !== storedFeed.source_type ||
+    activeFeed.status !== storedFeed.funding_type ||
+    activeFeed.calculation !== storedFeed.calculation_method ||
+    activeFeed.interval !== storedFeed.heartbeat_interval ||
+    activeFeed.deviation !== storedFeed.deviation
+  );
 }
