@@ -187,7 +187,7 @@ export async function getOrCreateLatestPolicy(network: Network): Promise<Policy>
     // Get current cached policy ID
     if (network.policies.length === 0)
       throw new Error(`No policies found for network: ${network.name}. There should be at least one policy.`);
-    const currentPolicy = network.policies[network.policies.length - 1];
+    const currentPolicy = network.policies.sort((a, b) => b.starting_slot - a.starting_slot)[0];
 
     // Fetch latest policy ID from Kupo
     const url = `${network.chain_index_base_url}/matches/*?policy_id=${network.fact_statement_pointer}&unspent&asset_name=${network.script_token}&order=most_recent_first`;
@@ -206,7 +206,7 @@ export async function getOrCreateLatestPolicy(network: Network): Promise<Policy>
       return currentPolicy;
     } else {
       console.info(`Detected ${network.name} FSP change...`);
-      const newPolicy = PolicySchema.parse({
+      const newPolicy = PolicySchema.omit({ id: true }).parse({
         network: network.id,
         policy_id: fetchedPolicyID,
         starting_slot: policyMatches[0].created_at.slot_no,
@@ -259,7 +259,7 @@ export async function fetchMatchesFromKupo(
   policy?: Policy
 ): Promise<KupoMatchesResponse | null> {
   try {
-    const policyToSearch = policy ?? network.policies[network.policies.length - 1];
+    const policyToSearch = policy ?? network.policies.sort((a, b) => b.starting_slot - a.starting_slot)[0];
     const response = await fetch(
       `${network.chain_index_base_url}/matches/${policyToSearch.policy_id}.*?${options.queryParams ? new URLSearchParams(options.queryParams) : ''}`,
       {
@@ -388,7 +388,7 @@ export async function parseAndIndexMatches(network: Network, matchesByTx: KupoMa
       const feedID = feeds.find((feed) => feed.feed_id === datum.feed_id)?.id;
       if (!feedID) throw new Error('Feed ID not found');
 
-      const latestPolicy = network.policies[network.policies.length - 1];
+      const latestPolicy = network.policies.sort((a, b) => b.starting_slot - a.starting_slot)[0];
 
       const fact_urn = transactionMetadata[index].map[0].v.string;
       const statement_hash = blake2b(new Uint8Array(32).length)
