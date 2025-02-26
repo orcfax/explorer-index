@@ -208,8 +208,8 @@ export const KupoRequestOptionsSchema = z.object({
   queryParams: z
     .object({
       order: z.enum(['oldest_first', 'most_recent_first']).optional(),
-      created_after: z.string().optional(),
-      created_before: z.string().optional()
+      created_after: z.union([z.string(), z.number()]).optional(),
+      created_before: z.union([z.string(), z.number()]).optional()
     })
     .optional()
 });

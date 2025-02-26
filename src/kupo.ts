@@ -429,6 +429,61 @@ export async function parseAndIndexMatches(network: Network, matchesByTx: KupoMa
   }
 }
 
+// Update existing fact statements with datum hashes from Kupo matches
+export async function updateFactStatementsWithDatumHashes(
+  network: Network,
+  factStatements: FactStatement[]
+): Promise<void> {
+  try {
+    for (const factStatement of factStatements) {
+      const url = `${network.chain_index_base_url}/matches/193ee65211bb3b4e0ea5f751f415269355a650e2e3706f625cdf1a4b.*?${new URLSearchParams(
+        {
+          order: 'oldest_first',
+          created_after: factStatement.slot.toString()
+          // output_index: factStatement.output_index.toString(),
+          // transaction_id: factStatement.transaction_id
+        }
+      )}`;
+      console.log('URL! ', url);
+      const response = await fetch(url);
+      console.log(response);
+      console.log(JSON.stringify(response, null, 2));
+      return;
+
+      console.log(response);
+      console.log(JSON.stringify(response, null, 2));
+      return;
+
+      const data = await response.json();
+      const matches = KupoMatchesSchema.parse(data);
+
+      if (matches.length === 0) {
+        console.log(`No match found for tx ${factStatement.transaction_id} output ${factStatement.output_index}`);
+        continue;
+      }
+
+      if (matches.length > 1) {
+        console.warn(
+          `Multiple matches found for tx ${factStatement.transaction_id} output ${factStatement.output_index}`
+        );
+      }
+
+      const match = matches[0];
+      if (!match.datum_hash) {
+        console.log(`No datum hash found for tx ${factStatement.transaction_id} output ${factStatement.output_index}`);
+        continue;
+      }
+
+      // Update fact statement with datum hash
+      await updateFactStatement(factStatement.fact_urn, { datum_hash: match.datum_hash });
+      console.log(`Updated fact statement ${factStatement.fact_urn} with datum hash ${match.datum_hash}`);
+    }
+  } catch (error) {
+    console.error('Error updating fact statements with datum hashes:', error);
+    throw error;
+  }
+}
+
 export async function fetchTransactionMetadataFromKupo(
   transactionId: string,
   slot: number,

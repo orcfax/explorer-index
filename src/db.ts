@@ -374,3 +374,29 @@ export async function getAllFactStatements(network: Network): Promise<FactStatem
     return [];
   }
 }
+
+export async function getAllFactStatementsWithNoDatumHash(
+  network: Network,
+  page: number = 1,
+  perPage: number = 200
+): Promise<{ facts: FactStatement[]; totalPages: number }> {
+  try {
+    const response = await db.collection('facts').getList<FactStatement>(page, perPage, {
+      filter: `network = "${network.id}" && datum_hash = ""`,
+      sort: '+slot'
+    });
+
+    const facts = z.array(FactStatementSchema).parse(response.items);
+
+    return {
+      facts,
+      totalPages: response.totalPages
+    };
+  } catch (error) {
+    logError('Error retrieving fact statements with no datum hash', error);
+    return {
+      facts: [],
+      totalPages: 0
+    };
+  }
+}
