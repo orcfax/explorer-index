@@ -9,7 +9,8 @@ import {
   updateNetwork,
   getAllNetworks,
   indexFactStatements,
-  deleteFactsOlderThanSlot
+  deleteFactsOlderThanSlot,
+  updateFactStatement
 } from './db.js';
 import {
   Policy,
@@ -417,7 +418,8 @@ export async function parseAndIndexMatches(network: Network, matchesByTx: KupoMa
         output_index: match.output_index,
         statement_hash,
         storage_cost: 0,
-        is_archive_indexed: false
+        is_archive_indexed: false,
+        datum_hash: match.datum_hash
       });
     }
 

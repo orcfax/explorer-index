@@ -103,7 +103,8 @@ export const FactStatementSchema = z.object({
     .catch(() => {
       return null;
     }),
-  is_archive_indexed: z.boolean().nullable()
+  is_archive_indexed: z.boolean().nullable(),
+  datum_hash: z.string().optional()
 });
 
 export const FeedSchema = z.object({
