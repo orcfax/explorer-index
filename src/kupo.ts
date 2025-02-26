@@ -206,7 +206,7 @@ export async function getOrCreateLatestPolicy(network: Network): Promise<Policy>
       return currentPolicy;
     } else {
       console.info(`Detected ${network.name} FSP change...`);
-      const newPolicy = PolicySchema.parse({
+      const newPolicy = PolicySchema.omit({ id: true }).parse({
         network: network.id,
         policy_id: fetchedPolicyID,
         starting_slot: policyMatches[0].created_at.slot_no,
