@@ -28,7 +28,7 @@ export async function initIndexSyncCronJob(networks: Network[]) {
 
           console.info(`\n* * Syncing policies for ${network.name}...`);
           const networkInCache = cachedNetworks.find((n) => n.name === network.name);
-          const currentPolicy = network.policies[network.policies.length - 1];
+          const currentPolicy = network.policies.sort((a, b) => b.starting_slot - a.starting_slot)[0];
           const latestPolicy = await getOrCreateLatestPolicy(network);
           // If the policy has changed, sync the fact statements for the previous policy and then the latest policy
           if (currentPolicy.policy_id !== latestPolicy.policy_id) {
