@@ -1,6 +1,13 @@
 import { logError } from './logger.js';
 import { ActiveFeeds, ActiveFeedsSchema, Feed, Network } from './types.js';
-import { createFeed, fetchAndParse, fetchFeeds as fetchStoredFeeds, updateFeed } from '../db.js';
+import {
+  createFeed,
+  fetchAndParse,
+  fetchFeeds as fetchStoredFeeds,
+  updateFeed,
+  getAssetByTicker,
+  createAsset
+} from '../db.js';
 
 export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<ActiveFeeds> {
   try {
@@ -18,34 +25,44 @@ export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<
       const feed_id = `${activeFeed.type}/${activeFeed.label}/3`;
       const existingFeed = storedFeeds.find((feed) => feed.feed_id === feed_id);
 
-      if (!existingFeed) {
-        console.info(`Indexing ${network.name} feed: ${feed_id}`);
-        await createFeed({
-          network: network.id,
-          feed_id,
-          type: activeFeed.type,
-          name: activeFeed.label,
-          version: 3,
-          status: 'active',
-          source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
-          funding_type: activeFeed.status,
-          calculation_method: activeFeed.calculation,
-          heartbeat_interval: activeFeed.interval,
-          deviation: activeFeed.deviation
-        });
-      } else if (isFeedChanged(activeFeed, existingFeed)) {
-        console.info(`Updating ${network.name} feed: ${feed_id}`);
-        await updateFeed({
-          id: existingFeed.id,
-          type: activeFeed.type,
-          name: activeFeed.label,
-          status: 'active',
-          source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
-          funding_type: activeFeed.status,
-          calculation_method: activeFeed.calculation,
-          heartbeat_interval: activeFeed.interval,
-          deviation: activeFeed.deviation
-        });
+      if (!existingFeed || isFeedChanged(activeFeed, existingFeed)) {
+        // Extract and get/create assets
+        const { base, quote } = extractTickersFromFeedName(activeFeed.label);
+        const [baseAssetId, quoteAssetId] = await Promise.all([getOrCreateAsset(base), getOrCreateAsset(quote)]);
+
+        if (!existingFeed) {
+          console.info(`Indexing ${network.name} feed: ${feed_id}`);
+          await createFeed({
+            network: network.id,
+            feed_id,
+            type: activeFeed.type,
+            name: activeFeed.label,
+            version: 3,
+            status: 'active',
+            source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
+            funding_type: activeFeed.status,
+            calculation_method: activeFeed.calculation,
+            heartbeat_interval: activeFeed.interval,
+            deviation: activeFeed.deviation,
+            base_asset: baseAssetId,
+            quote_asset: quoteAssetId
+          });
+        } else if (isFeedChanged(activeFeed, existingFeed)) {
+          console.info(`Updating ${network.name} feed: ${feed_id}`);
+          await updateFeed({
+            id: existingFeed.id,
+            type: activeFeed.type,
+            name: activeFeed.label,
+            status: 'active',
+            source_type: activeFeed.source.toUpperCase() as Feed['source_type'],
+            funding_type: activeFeed.status,
+            calculation_method: activeFeed.calculation,
+            heartbeat_interval: activeFeed.interval,
+            deviation: activeFeed.deviation,
+            base_asset: baseAssetId,
+            quote_asset: quoteAssetId
+          });
+        }
       }
 
       processedFeedIds.add(feed_id);
@@ -82,4 +99,33 @@ function isFeedChanged(activeFeed: ActiveFeeds['feeds'][number], storedFeed: Fee
     activeFeed.interval !== storedFeed.heartbeat_interval ||
     activeFeed.deviation !== storedFeed.deviation
   );
+}
+
+async function getOrCreateAsset(ticker: string): Promise<string> {
+  const existingAsset = await getAssetByTicker(ticker);
+  if (existingAsset) {
+    return existingAsset.id;
+  }
+
+  const newAsset = await createAsset({
+    ticker
+  });
+
+  if (!newAsset) {
+    throw new Error(`Failed to create asset for ticker: ${ticker}`);
+  }
+
+  return newAsset.id;
+}
+
+function extractTickersFromFeedName(feedName: string): { base: string; quote: string } {
+  // Feed names are typically in the format "BASE/QUOTE" or "BASE-QUOTE"
+  const parts = feedName.split(/[/-]/);
+  if (parts.length !== 2) {
+    throw new Error(`Invalid feed name format: ${feedName}`);
+  }
+  return {
+    base: parts[0].trim(),
+    quote: parts[1].trim()
+  };
 }
