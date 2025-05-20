@@ -9,6 +9,7 @@ export type Network = z.infer<typeof NetworkSchema>;
 export type DBNetwork = z.infer<typeof DBNetworkSchema>;
 export type NetworkSeed = z.infer<typeof NetworkSeedSchema>;
 export type FactStatement = z.infer<typeof FactStatementSchema>;
+export type Asset = z.infer<typeof AssetSchema>;
 
 export const DBNetworkSchema = z.object({
   id: z.string(),
@@ -106,6 +107,17 @@ export const FactStatementSchema = z.object({
   is_archive_indexed: z.boolean().nullable()
 });
 
+export const AssetSchema = z.object({
+  id: z.string(),
+  ticker: z.string(),
+  name: z.string().optional(),
+  type: z.enum(['Cryptocurrency', 'Fiat Currency', '']).optional(),
+  website: z.string().optional(),
+  fingerprint: z.string().optional(),
+  image_path: z.string().optional(),
+  background_color: z.string().optional()
+});
+
 export const FeedSchema = z.object({
   id: z.string(),
   network: z.string(),
@@ -118,7 +130,9 @@ export const FeedSchema = z.object({
   funding_type: z.enum(['showcase', 'paid', 'subsidized', '']),
   calculation_method: z.string(),
   heartbeat_interval: z.number(),
-  deviation: z.number()
+  deviation: z.number(),
+  quote_asset: z.string(),
+  base_asset: z.string()
 });
 
 // Active Feeds Schemas - Used for fetching active feeds from GitHub cer-feeds.json

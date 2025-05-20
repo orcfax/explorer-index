@@ -13,7 +13,9 @@ import {
   FactStatement,
   NetworkSchema,
   DBNetworkSchema,
-  FactStatementSchema
+  FactStatementSchema,
+  Asset,
+  AssetSchema
 } from './util/types.js';
 // import { sub } from 'date-fns';
 import { logError } from './util/logger.js';
@@ -371,6 +373,40 @@ export async function getAllFactStatements(network: Network): Promise<FactStatem
     return facts;
   } catch (error) {
     logError('Error retrieving fact records', error);
+    return [];
+  }
+}
+
+export async function getAssetByTicker(ticker: string): Promise<Asset | null> {
+  try {
+    const response = await db.collection('assets').getFirstListItem<Asset>(`ticker = "${ticker}"`);
+    return AssetSchema.parse(response);
+  } catch (error) {
+    if (error instanceof ClientResponseError && error.response.code === 404) {
+      return null;
+    }
+    logError('Error retrieving asset', error);
+    return null;
+  }
+}
+
+export async function createAsset(asset: Omit<Asset, 'id'>): Promise<Asset | null> {
+  try {
+    console.info(`Creating asset: ${asset.ticker}`);
+    const newAsset = await db.collection('assets').create<Asset>(asset);
+    return AssetSchema.parse(newAsset);
+  } catch (error) {
+    logError('Error adding asset record', error);
+    return null;
+  }
+}
+
+export async function getAllAssets(): Promise<Asset[]> {
+  try {
+    const response = await db.collection('assets').getFullList();
+    return z.array(AssetSchema).parse(response);
+  } catch (error) {
+    logError('Error retrieving asset records', error);
     return [];
   }
 }
