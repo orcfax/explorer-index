@@ -106,7 +106,7 @@ function isFeedChanged(activeFeed: ActiveFeeds['feeds'][number], storedFeed: Fee
   );
 }
 
-async function getOrCreateAssets(tickers: string[]): Promise<Asset[]> {
+export async function getOrCreateAssets(tickers: string[]): Promise<Asset[]> {
   const existingAssets = await getAllAssets();
   const resultAssets: Asset[] = [];
 
@@ -132,7 +132,7 @@ async function getOrCreateAssets(tickers: string[]): Promise<Asset[]> {
   return resultAssets;
 }
 
-function extractTickersFromFeedName(feedName: string): { base: string; quote: string } {
+export function extractTickersFromFeedName(feedName: string): { base: string; quote: string } {
   // Feed names are typically in the format "BASE/QUOTE" or "BASE-QUOTE"
   const parts = feedName.split(/[/-]/);
   if (parts.length !== 2) {

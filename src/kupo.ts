@@ -33,12 +33,13 @@ import {
   KupoDatumResponseSchema,
   KupoMatchesByTransaction,
   KupoMetadataResponseSchema,
-  NetworkSeed
+  NetworkSeed,
+  Asset
 } from './util/types.js';
 import blake2b from 'blake2b';
 import { logError } from './util/logger.js';
 import { dateToSlot, NetworkSeeds, slotAfterTimePeriod, slotToDate } from './util/network.js';
-import { syncFeeds } from './util/feeds.js';
+import { syncFeeds, extractTickersFromFeedName, getOrCreateAssets } from './util/feeds.js';
 
 // Populate the index from scratch for a given network by
 // fetching time-based batches of matches from a Kupo instance
@@ -369,6 +370,16 @@ export async function parseAndIndexMatches(network: Network, matchesByTx: KupoMa
       // Index feed if unindexed
       if (!feeds.find((feed) => feed.feed_id === datum.feed_id)) {
         console.log(`Indexing ${network.name} feed: ${datum.feed_id}`);
+
+        // Extract and get/create assets
+        const { base, quote } = extractTickersFromFeedName(datum.feed_name);
+        const assets = await getOrCreateAssets([base, quote]);
+        const baseAssetId = assets.find((asset: Asset) => asset.ticker === base)?.id;
+        const quoteAssetId = assets.find((asset: Asset) => asset.ticker === quote)?.id;
+        if (!baseAssetId || !quoteAssetId) {
+          throw new Error(`Failed to create assets for ${base} and ${quote}`);
+        }
+
         const feed = await createFeed({
           network: network.id,
           feed_id: datum.feed_id,
@@ -380,7 +391,9 @@ export async function parseAndIndexMatches(network: Network, matchesByTx: KupoMa
           funding_type: '',
           calculation_method: '',
           heartbeat_interval: 0,
-          deviation: 0
+          deviation: 0,
+          base_asset: baseAssetId,
+          quote_asset: quoteAssetId
         });
         if (!feed) throw new Error('Failed to create feed');
         else feeds.push(feed);
