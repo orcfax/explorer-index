@@ -1,12 +1,12 @@
 import { logError } from './logger.js';
-import { ActiveFeeds, ActiveFeedsSchema, Feed, Network } from './types.js';
+import { ActiveFeeds, ActiveFeedsSchema, Asset, Feed, Network } from './types.js';
 import {
   createFeed,
   fetchAndParse,
   fetchFeeds as fetchStoredFeeds,
   updateFeed,
-  getAssetByTicker,
-  createAsset
+  createAsset,
+  getAllAssets
 } from '../db.js';
 
 export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<ActiveFeeds> {
@@ -28,7 +28,12 @@ export async function syncFeeds(network: Network, cache?: ActiveFeeds): Promise<
       if (!existingFeed || isFeedChanged(activeFeed, existingFeed)) {
         // Extract and get/create assets
         const { base, quote } = extractTickersFromFeedName(activeFeed.label);
-        const [baseAssetId, quoteAssetId] = await Promise.all([getOrCreateAsset(base), getOrCreateAsset(quote)]);
+        const assets = await getOrCreateAssets([base, quote]);
+        const baseAssetId = assets.find((asset) => asset.ticker === base)?.id;
+        const quoteAssetId = assets.find((asset) => asset.ticker === quote)?.id;
+        if (!baseAssetId || !quoteAssetId) {
+          throw new Error(`Failed to create assets for ${base} and ${quote}`);
+        }
 
         if (!existingFeed) {
           console.info(`Indexing ${network.name} feed: ${feed_id}`);
@@ -101,21 +106,30 @@ function isFeedChanged(activeFeed: ActiveFeeds['feeds'][number], storedFeed: Fee
   );
 }
 
-async function getOrCreateAsset(ticker: string): Promise<string> {
-  const existingAsset = await getAssetByTicker(ticker);
-  if (existingAsset) {
-    return existingAsset.id;
+async function getOrCreateAssets(tickers: string[]): Promise<Asset[]> {
+  const existingAssets = await getAllAssets();
+  const resultAssets: Asset[] = [];
+
+  for (const ticker of tickers) {
+    const tickerLower = ticker.toLowerCase();
+    const existingAsset = existingAssets.find((asset) => asset.ticker.toLowerCase() === tickerLower);
+
+    if (existingAsset) {
+      resultAssets.push(existingAsset);
+    } else {
+      const newAsset = await createAsset({
+        ticker: ticker
+      });
+
+      if (!newAsset) {
+        throw new Error(`Failed to create asset for ticker: ${ticker}`);
+      }
+
+      resultAssets.push(newAsset);
+    }
   }
 
-  const newAsset = await createAsset({
-    ticker
-  });
-
-  if (!newAsset) {
-    throw new Error(`Failed to create asset for ticker: ${ticker}`);
-  }
-
-  return newAsset.id;
+  return resultAssets;
 }
 
 function extractTickersFromFeedName(feedName: string): { base: string; quote: string } {

@@ -111,7 +111,7 @@ export const AssetSchema = z.object({
   id: z.string(),
   ticker: z.string(),
   name: z.string().optional(),
-  type: z.enum(['Cryptocurrency', 'Fiat Currency']).optional(),
+  type: z.enum(['Cryptocurrency', 'Fiat Currency', '']).optional(),
   website: z.string().optional(),
   fingerprint: z.string().optional(),
   image_path: z.string().optional(),

@@ -400,3 +400,13 @@ export async function createAsset(asset: Omit<Asset, 'id'>): Promise<Asset | nul
     return null;
   }
 }
+
+export async function getAllAssets(): Promise<Asset[]> {
+  try {
+    const response = await db.collection('assets').getFullList();
+    return z.array(AssetSchema).parse(response);
+  } catch (error) {
+    logError('Error retrieving asset records', error);
+    return [];
+  }
+}
