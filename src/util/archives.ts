@@ -203,7 +203,7 @@ async function getSourceDetailsFromArchive(
       );
       if (!hasCachedSource) {
         const senderUrl = new URL(source.sender);
-        const newSource = await createSource({
+        const newSource = await createSource(network, {
           network: network.id,
           name,
           type: source.isBasedOn.additionalType === 'Central Exchange Data' ? 'CEX API' : 'DEX LP',
