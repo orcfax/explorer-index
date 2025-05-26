@@ -73,7 +73,8 @@ export const SourceSchema = z.object({
   // For CEX sources, assetPairValue is used. For DEX sources base and quote will be used.
   baseAssetValue: z.number().optional(),
   quoteAssetValue: z.number().optional(),
-  assetPairValue: z.number().optional()
+  assetPairValue: z.number().optional(),
+  status: z.enum(['active', 'inactive'])
 });
 
 export const FactStatementSchema = z.object({

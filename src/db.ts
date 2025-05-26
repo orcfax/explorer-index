@@ -327,6 +327,17 @@ export async function createSource(network: Network, source: Omit<Source, 'id'>)
   }
 }
 
+export async function updateSource(source: Partial<Source>): Promise<Source | null> {
+  try {
+    if (!source.id) throw new Error('Source ID is required to update source');
+    const updatedSource = await db.collection('sources').update<Source>(source.id, source);
+    return updatedSource;
+  } catch (error) {
+    logError('Error updating source record', error);
+    return null;
+  }
+}
+
 export async function updateFactStatement(id: string, fact: Partial<FactStatement>) {
   try {
     await db.collection('facts').update(id, { ...fact });

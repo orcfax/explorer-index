@@ -15,7 +15,7 @@ import { promisify } from 'util';
 import * as tar from 'tar-stream';
 import { logError } from './logger.js';
 import { pipeline, Readable } from 'stream';
-import { createNode, createSource, getAllNodes, getAllSources, updateFactStatement } from '../db.js';
+import { createNode, createSource, getAllNodes, getAllSources, updateFactStatement, updateSource } from '../db.js';
 
 export async function indexArchives(network: Network, facts: FactStatement[]) {
   if (facts.length < 1) return;
@@ -198,24 +198,73 @@ async function getSourceDetailsFromArchive(
 
     // Create sources for any missing source names in cache
     for (const [name, source] of archiveSources) {
+      const sourceType = source.isBasedOn.additionalType === 'Central Exchange Data' ? 'CEX API' : 'DEX LP';
+      const senderUrl = new URL(source.sender);
+      const sender = source.sender.includes('https://') ? `${senderUrl.protocol}//${senderUrl.host}` : source.sender;
+
+      // First check for exact match (same recipient)
       const hasCachedSource = sourcesCache.find(
         (cached) => cached.recipient === source.recipient && cached.network === network.id
       );
+
       if (!hasCachedSource) {
-        const senderUrl = new URL(source.sender);
-        const newSource = await createSource(network, {
-          network: network.id,
-          name,
-          type: source.isBasedOn.additionalType === 'Central Exchange Data' ? 'CEX API' : 'DEX LP',
-          sender: source.sender.includes('https://') ? `${senderUrl.protocol}//${senderUrl.host}` : source.sender,
-          recipient: source.recipient
-        });
-        if (newSource) {
-          console.info(`Created new ${network.name} source: ${newSource.recipient}`);
-          sources.push(newSource);
-          sourcesCache.push(newSource);
+        // Check for source with same name, type, and sender but different recipient
+        const existingSource = sourcesCache.find(
+          (cached) =>
+            cached.name === name &&
+            cached.type === sourceType &&
+            cached.sender === sender &&
+            cached.network === network.id &&
+            cached.recipient !== source.recipient
+        );
+
+        if (existingSource) {
+          // Update existing source to inactive
+          await updateSource({
+            id: existingSource.id,
+            status: 'inactive'
+          });
+
+          // Create new source with properties from existing source
+          const newSource = await createSource(network, {
+            network: network.id,
+            name,
+            type: sourceType,
+            sender,
+            recipient: source.recipient,
+            status: 'active',
+            website: existingSource.website,
+            image_path: existingSource.image_path,
+            background_color: existingSource.background_color
+          });
+
+          if (newSource) {
+            console.info(
+              `Updated ${network.name} source: ${newSource.recipient} (replaced ${existingSource.recipient})`
+            );
+            sources.push(newSource);
+            sourcesCache.push(newSource);
+          }
+        } else {
+          // Create completely new source
+          const newSource = await createSource(network, {
+            network: network.id,
+            name,
+            type: sourceType,
+            sender,
+            recipient: source.recipient,
+            status: 'active'
+          });
+
+          if (newSource) {
+            console.info(`Created new ${network.name} source: ${newSource.recipient}`);
+            sources.push(newSource);
+            sourcesCache.push(newSource);
+          }
         }
-      } else sources.push(hasCachedSource);
+      } else {
+        sources.push(hasCachedSource);
+      }
     }
 
     return sources;
