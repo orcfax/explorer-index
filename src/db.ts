@@ -317,12 +317,12 @@ export async function getAllSources(network: Network): Promise<Source[]> {
   }
 }
 
-export async function createSource(source: Omit<Source, 'id'>): Promise<Source | null> {
+export async function createSource(network: Network, source: Omit<Source, 'id'>): Promise<Source | null> {
   try {
     const newSource = await db.collection('sources').create<Source>(source);
     return SourceSchema.parse(newSource);
   } catch (error) {
-    logError('Error adding source record', error);
+    logError(`Error adding source record to ${network.name}. \n ${JSON.stringify(source, null, 2)}`, error);
     return null;
   }
 }
