@@ -190,7 +190,7 @@ async function getSourceDetailsFromArchive(
 
     // Build the list of sources in the archive
     const archiveSources = messageFiles.reduce((acc, sourceMessage) => {
-      const match = sourceMessage.fileName.match(/-([\w]+?)(?:\.tick_|-\d{4}-\d{2}-\d{2}T)/);
+      const match = sourceMessage.fileName.match(/-([\w.]+?)(?:\.tick_|-\d{4}-\d{2}-\d{2}T)/);
       if (!match)
         throw new Error(
           `Error retrieving source name from file name for network ${network.name}, file: ${sourceMessage.fileName}`
