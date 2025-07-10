@@ -8,7 +8,7 @@ try {
   console.info('\nBooting up Explorer Index...');
 
   // Setup Networks
-  const networks = await getNetworks();
+  // const networks = await getNetworks();
 
   // Setup Fact Statements
   // for (const network of networks) {
