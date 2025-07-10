@@ -151,6 +151,7 @@ async function populatePolicyIDs(network: DBNetwork, seed: NetworkSeed): Promise
         const datumUrl = `${network.chain_index_base_url}/datums/${match.datum_hash}`;
         const datumResponse = await fetchAndParse<KupoDatumResponse>(datumUrl, KupoDatumResponseSchema);
         const datum = datumResponse.datum;
+        if (!datum) throw new Error('Datum from Kupo response was null');
         const decoded = cbor.decodeFirstSync(datum);
         const policy_id = decoded.toString('hex');
 
@@ -196,6 +197,7 @@ export async function getOrCreateLatestPolicy(network: Network): Promise<Policy>
     if (!policyMatches || policyMatches.length === 0) throw new Error('No matches found from Kupo');
     const datumUrl = `${network.chain_index_base_url}/datums/${policyMatches[0].datum_hash}`;
     const datumResponse = await fetchAndParse<KupoDatumResponse>(datumUrl, KupoDatumResponseSchema);
+    if (!datumResponse.datum) throw new Error('Datum from Kupo response was null');
     const decoded = cbor.decodeFirstSync(datumResponse.datum);
     const fetchedPolicyID = decoded.toString('hex');
 

@@ -270,7 +270,7 @@ export async function fetchAndParse<T>(
     });
 
     const data = await response.json();
-    return responseSchema.parse(data);
+    return responseSchema.parse(data) as T;
   } catch (error) {
     logError(`Error fetching or parsing data from ${url}`, error);
     throw error;
