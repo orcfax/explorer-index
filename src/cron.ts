@@ -14,7 +14,7 @@ export async function initIndexSyncCronJob(networks: Network[]) {
   let cachedFeeds: ActiveFeeds;
 
   CronJob.from({
-    cronTime: '0 */10 * * * *', // Every 10 minutes
+    cronTime: '0 */20 * * * *', // Every 20 minutes
     // cronTime: '0 */1 * * * *', // Every 1 minute
     timeZone: 'UTC',
     start: true,
