@@ -8,17 +8,17 @@ try {
   console.info('\nBooting up Explorer Index...');
 
   // Setup Networks
-  const networks = await getNetworks();
+  // const networks = await getNetworks();
 
   // Setup Fact Statements
-  for (const network of networks) {
-    if (await isIndexEmpty(network)) {
-      await populateIndex(network);
-    }
-  }
+  // for (const network of networks) {
+  //   if (await isIndexEmpty(network)) {
+  //     await populateIndex(network);
+  //   }
+  // }
 
   // Setup Cron Jobs
-  initIndexSyncCronJob(networks);
+  // initIndexSyncCronJob(networks);
 } catch (error) {
   logError('Unhandled exception', error);
 }
