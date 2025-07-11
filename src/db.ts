@@ -47,7 +47,10 @@ export async function indexFactStatements(
         if (isFactAlreadyIndexed(error)) {
           skippedCount++;
         } else {
-          logError('Error indexing fact statement', error);
+          logError(
+            `Error indexing fact statement: ${fact.fact_urn} from feed ${fact.feed} on network ${fact.network}`,
+            error
+          );
         }
         throw error;
       });
