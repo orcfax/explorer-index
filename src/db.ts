@@ -24,7 +24,7 @@ import PocketBase, { ClientResponseError } from 'pocketbase';
 
 // Setup DB connection
 const db = new PocketBase(process.env.DB_HOST);
-await db.admins.authWithPassword(process.env.DB_EMAIL, process.env.DB_PASSWORD);
+await db.collection('_superusers').authWithPassword(process.env.DB_EMAIL, process.env.DB_PASSWORD);
 
 export async function indexFactStatements(
   facts: Omit<FactStatement, 'id' | 'participating_nodes' | 'sources' | 'content_signature' | 'collection_date'>[]
