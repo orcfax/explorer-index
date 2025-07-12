@@ -116,7 +116,8 @@ export const AssetSchema = z.object({
   website: z.string().optional(),
   fingerprint: z.string().optional(),
   image_path: z.string().optional(),
-  background_color: z.string().optional()
+  background_color: z.string().optional(),
+  hasXerberusRiskRating: z.boolean().optional()
 });
 
 export const FeedSchema = z.object({
@@ -583,3 +584,29 @@ export const BagInfoSchema = z.object({
   'System-Version': z.string(),
   'Unix-Time': z.string().transform(Number)
 });
+
+// Xerberus Risk Rating Types
+export const XerberusRiskScoreSchema = z.object({
+  asset_name: z.string(),
+  fingerprint: z.string(),
+  subject: z.string(),
+  risk_category: z.string()
+});
+
+export const XerberusBulkRiskRatingAPIResponseSchema = z.object({
+  status: z.literal('success'),
+  data: z.object({
+    version: z.string(),
+    scores: z.array(XerberusRiskScoreSchema)
+  })
+});
+
+export type XerberusRiskScore = z.infer<typeof XerberusRiskScoreSchema>;
+export type XerberusBulkRiskRatingAPIResponse = z.infer<typeof XerberusBulkRiskRatingAPIResponseSchema>;
+
+export type XerberusBulkRiskRating = {
+  response: XerberusBulkRiskRatingAPIResponse;
+  xSignedBy: string;
+  xSignature: string;
+  endpoint: string;
+};

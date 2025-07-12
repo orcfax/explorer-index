@@ -1,6 +1,6 @@
 {
   "name": "explorer-index",
-  "version": "v1.0.6",
+  "version": "v1.0.7",
   "description": "A fact-indexing service to live alongside the Orcfax Explorer",
   "main": "index.ts",
   "scripts": {

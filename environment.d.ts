@@ -10,6 +10,8 @@ declare global {
       DISCORD_WEBHOOK_URL: string;
       PRIMARY_ARWEAVE_ENDPOINT: string;
       SECONDARY_ARWEAVE_ENDPOINT: string;
+      PRIVATE_XERBERUS_API_KEY: string;
+      PRIVATE_XERBERUS_USER_EMAIL: string;
     }
   }
 }

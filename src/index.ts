@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { isIndexEmpty } from './db.js';
 import { logError } from './util/logger.js';
-import { initIndexSyncCronJob } from './cron.js';
+import { initIndexSyncCronJob, initXerberusRatingsSyncCronJob } from './cron.js';
 import { getNetworks, populateIndex } from './kupo.js';
 
 try {
@@ -19,6 +19,7 @@ try {
 
   // Setup Cron Jobs
   initIndexSyncCronJob(networks);
+  initXerberusRatingsSyncCronJob();
 } catch (error) {
   logError('Unhandled exception', error);
 }

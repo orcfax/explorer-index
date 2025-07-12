@@ -5,6 +5,7 @@ import { indexArchives } from './util/archives.js';
 import { ActiveFeeds, Network } from './util/types.js';
 import { getAllUnarchivedFacts, getLastIndexedFact } from './db.js';
 import { getOrCreateLatestPolicy, syncFactStatements } from './kupo.js';
+import { updateXerberusRiskRatingSupport } from './util/xerberus.js';
 
 // Scan for fact statements to index and sync feeds if necessary
 export async function initIndexSyncCronJob(networks: Network[]) {
@@ -89,6 +90,26 @@ export async function initIndexSyncCronJob(networks: Network[]) {
         } catch (error) {
           logError(`An error occurred while syncing the index for network ${network.name}:`, error);
         }
+      }
+    }
+  });
+}
+
+// Check for Xerberus risk rating support for all assets once a day
+export async function initXerberusRatingsSyncCronJob() {
+  console.info('\nInitialized Xerberus risk ratings sync cron job...\n');
+
+  CronJob.from({
+    cronTime: '0 0 0 * * *', // Every day at midnight UTC
+    timeZone: 'UTC',
+    start: true,
+    onTick: async function () {
+      console.info('\n* Syncing Xerberus risk ratings support...');
+      try {
+        await updateXerberusRiskRatingSupport();
+        console.info('\n* Finished syncing Xerberus risk ratings support\n');
+      } catch (error) {
+        logError('An error occurred while syncing Xerberus risk ratings support:', error);
       }
     }
   });
