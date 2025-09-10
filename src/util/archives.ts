@@ -94,7 +94,7 @@ export async function getArchiveFiles(
     return files;
   } catch (e) {
     logError(
-      `Something went wrong fetching the archive for fact_urn ${fact.fact_urn} with storage_urn ${fact.storage_urn}`
+      `Error fetching the archive for fact_urn ${fact.fact_urn} with storage_urn ${fact.storage_urn}. Full fact: ${JSON.stringify(fact, null, 2)}`
     );
     return null;
   }
