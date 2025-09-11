@@ -34,7 +34,7 @@ export async function indexFactStatements(
   let successfulCount = 0;
   let skippedCount = 0;
 
-  const promises = orderedFacts.map((fact) => {
+  const promises = orderedFacts.map(async (fact) => {
     return db
       .collection('facts')
       .create<FactStatement>(fact, {
@@ -48,7 +48,7 @@ export async function indexFactStatements(
           skippedCount++;
         } else {
           logError(
-            `Error indexing fact statement: ${fact.fact_urn} from feed ${fact.feed} on network ${fact.network === 'l1ppggh4ls079w9' ? 'Mainnet' : 'Preview'}`,
+            `Error indexing fact statement: ${fact.fact_urn} from feed ${fact.feed} on network ${fact.network === 'l1ppggh4ls079w9' ? 'Mainnet' : 'Preview'} --- ${JSON.stringify(error?.response?.data, null, 2)}`,
             error
           );
         }
