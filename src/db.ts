@@ -48,7 +48,7 @@ export async function indexFactStatements(
           skippedCount++;
         } else {
           logError(
-            `Error indexing fact statement: ${fact.fact_urn} from feed ${fact.feed} on network ${fact.network}`,
+            `Error indexing fact statement: ${fact.fact_urn} from feed ${fact.feed} on network ${fact.network === 'l1ppggh4ls079w9' ? 'Mainnet' : 'Preview'}`,
             error
           );
         }
