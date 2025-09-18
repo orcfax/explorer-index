@@ -409,7 +409,11 @@ export async function parseAndIndexMatches(network: Network, matchesByTx: KupoMa
       const statement_hash = blake2b(new Uint8Array(32).length)
         .update(Buffer.from(`${datum.datum_hash}${fact_urn}`))
         .digest('hex');
-      const arweaveFailureMessages = ['arweave tx not created', 'send to Arkly feature is not currently enabled'];
+      const arweaveFailureMessages = [
+        'arweave tx not created',
+        'send to Arkly feature is not currently enabled',
+        'urn:arweave:None'
+      ];
       const storage_urn = transactionMetadata[index].map[1].v.string;
 
       factStatements.push({
