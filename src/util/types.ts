@@ -154,7 +154,7 @@ export const ActiveFeedsSchema = z.object({
       deviation: z.number(),
       source: z.enum(['cex', 'dex']),
       calculation: z.enum(['median', 'weighted mean']),
-      status: z.enum(['showcase', 'subsidized', 'paid']),
+      status: z.preprocess((val) => (val === 'sponsored' ? 'paid' : val), z.enum(['showcase', 'subsidized', 'paid'])),
       type: z.enum(['CER'])
     })
   )
