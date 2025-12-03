@@ -21,6 +21,9 @@ export async function initIndexSyncCronJob(networks: Network[]) {
     start: true,
     onTick: async function () {
       for (const network of cachedNetworks) {
+        // Skip indexing network if it is not enabled
+        if (network.is_enabled === false) continue;
+
         console.info(`\n* Syncing index for ${network.name}...`);
         try {
           console.info(`\n* * Syncing feeds for ${network.name}...`);
