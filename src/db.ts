@@ -17,10 +17,8 @@ import {
   Asset,
   AssetSchema
 } from './util/types.js';
-// import { sub } from 'date-fns';
 import { logError } from './util/logger.js';
 import PocketBase, { ClientResponseError } from 'pocketbase';
-// import { format as formatZonedTime, toZonedTime } from 'date-fns-tz';
 
 // Setup DB connection
 const db = new PocketBase(process.env.DB_HOST);
@@ -351,20 +349,11 @@ export async function updateFactStatement(id: string, fact: Partial<FactStatemen
 
 export async function getAllUnarchivedFacts(network: Network): Promise<FactStatement[]> {
   try {
-    // const now = new Date();
-    // const isoString = now.toISOString();
-    // const timeString = isoString.split('T')[1].slice(0, 12) + 'Z';
-
-    // const getFormattedDateFilter = (hours: number) => {
-    //   const newDate = sub(now, {
-    //     hours
-    //   });
-    //   return formatZonedTime(toZonedTime(newDate, 'UTC'), 'yyyy-MM-dd', { timeZone: 'UTC' }) + ' ' + timeString;
-    // };
-    // const oneHourAgo = getFormattedDateFilter(1);
+    const archiveRetryHours = Number(process.env.ARCHIVE_RETRY_HOURS) || 6;
+    const cutoff = new Date(Date.now() - archiveRetryHours * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19);
 
     const response = await db.collection('facts').getFullList({
-      filter: `network = "${network.id}" && is_archive_indexed = false && storage_urn != ""`
+      filter: `network = "${network.id}" && is_archive_indexed = false && storage_urn != "" && publication_date >= "${cutoff}"`
     });
 
     const facts = z.array(FactStatementSchema).parse(response);

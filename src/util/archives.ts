@@ -28,6 +28,8 @@ export async function indexArchives(network: Network, facts: FactStatement[]) {
   // Set a concurrency limit. Adjust as needed based on performance and resource constraints.
   const limit = pLimit(5);
 
+  const failedFacts: { fact_urn: string; storage_urn: string }[] = [];
+
   // Define the task for a single fact
   const processFact = async (fact: FactStatement, index: number) => {
     console.info(`Indexing ${index + 1} of ${facts.length} archives, Fact URN: ${fact.fact_urn}`);
@@ -38,7 +40,10 @@ export async function indexArchives(network: Network, facts: FactStatement[]) {
     }
 
     const files = await getArchiveFiles(fact);
-    if (!files) return null;
+    if (!files) {
+      failedFacts.push({ fact_urn: fact.fact_urn, storage_urn: fact.storage_urn });
+      return null;
+    }
 
     // Parse the archive files
     const [nodes, sources] = await Promise.all([
@@ -68,6 +73,12 @@ export async function indexArchives(network: Network, facts: FactStatement[]) {
   const successfulArchives = results.filter(Boolean);
 
   console.info(`* * Indexed archives for ${successfulArchives.length} of ${facts.length} facts.`);
+
+  // Send a single batched error for all failed archive fetches
+  if (failedFacts.length > 0) {
+    const urnList = failedFacts.map((f) => `  - ${f.fact_urn} (${f.storage_urn})`).join('\n');
+    logError(`Failed to fetch ${failedFacts.length} archive(s) from Arweave for ${network.name}:\n${urnList}`);
+  }
 }
 
 export async function getArchiveFiles(
@@ -93,9 +104,7 @@ export async function getArchiveFiles(
 
     return files;
   } catch (e) {
-    logError(
-      `Error fetching the archive for fact_urn ${fact.fact_urn} with storage_urn ${fact.storage_urn}. Full fact: ${JSON.stringify(fact, null, 2)}`
-    );
+    console.error(`Error fetching archive for ${fact.fact_urn}: ${e instanceof Error ? e.message : e}`);
     return null;
   }
 }
