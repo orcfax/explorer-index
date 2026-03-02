@@ -44,13 +44,15 @@ export async function logError(message: string, error?: unknown) {
 
 async function sendMessageToDiscord(message: string) {
   try {
+    const content = `${process.env.NODE_ENV.toUpperCase()}: ${message}`;
+    const truncated = content.length > 2000 ? content.slice(0, 1987) + ' <TRUNCATED>' : content;
     const res = await fetch(DISCORD_WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        content: `${process.env.NODE_ENV.toUpperCase()}: ${message}`
+        content: truncated
       })
     });
 
