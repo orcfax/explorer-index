@@ -81,27 +81,47 @@ export async function indexArchives(network: Network, facts: FactStatement[]) {
   }
 }
 
+async function fetchArchive(endpoint: string, storageUrn: string): Promise<ArrayBuffer> {
+  const url = `${endpoint.replace(/\/+$/, '')}/${storageUrn.slice(12)}`;
+  const response = await fetch(url);
+
+  if (!response.body || !response.ok) {
+    throw new Error(`HTTP ${response.status} from ${endpoint}`);
+  }
+
+  const contentType = response.headers.get('content-type');
+  if (!contentType || (!contentType.includes('x-tar') && !contentType.includes('gzip'))) {
+    throw new Error(`Unexpected content type: ${contentType} from ${endpoint}`);
+  }
+
+  return response.arrayBuffer();
+}
+
 export async function getArchiveFiles(
   fact: Pick<FactStatement, 'fact_urn' | 'storage_urn'>
 ): Promise<ArchivedFile[] | null> {
   try {
     if (!fact.storage_urn) return [];
 
-    const archivedBagResponse = await fetch(`https://arweave.net/${fact.storage_urn.slice(12)}`, {});
+    const primaryEndpoint = process.env.PRIMARY_ARWEAVE_ENDPOINT;
+    const secondaryEndpoint = process.env.SECONDARY_ARWEAVE_ENDPOINT;
 
-    if (!archivedBagResponse.body || !archivedBagResponse.ok) {
-      throw new Error('Unable to retrieve fact statement archival package');
+    if (!primaryEndpoint) {
+      throw new Error('PRIMARY_ARWEAVE_ENDPOINT is not configured');
     }
 
-    const contentType = archivedBagResponse.headers.get('content-type');
-    if (!contentType || (!contentType.includes('x-tar') && !contentType.includes('gzip'))) {
-      throw new Error(`Unexpected content type: ${contentType}`);
+    let archivedBagArrayBuffer: ArrayBuffer;
+    try {
+      archivedBagArrayBuffer = await fetchArchive(primaryEndpoint, fact.storage_urn);
+    } catch (primaryError) {
+      if (!secondaryEndpoint) throw primaryError;
+      console.warn(
+        `Primary Arweave endpoint failed for ${fact.fact_urn}: ${primaryError instanceof Error ? primaryError.message : primaryError}, trying secondary...`
+      );
+      archivedBagArrayBuffer = await fetchArchive(secondaryEndpoint, fact.storage_urn);
     }
 
-    const archivedBagArrayBuffer = await archivedBagResponse.arrayBuffer();
-    const archivedBagTarball = archivedBagArrayBuffer; // new Uint8Array(archivedBagArrayBuffer);
-    const files = await getArchivedFilesFromTarball(archivedBagTarball);
-
+    const files = await getArchivedFilesFromTarball(archivedBagArrayBuffer);
     return files;
   } catch (e) {
     console.error(`Error fetching archive for ${fact.fact_urn}: ${e instanceof Error ? e.message : e}`);
