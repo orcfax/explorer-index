@@ -90,7 +90,10 @@ async function fetchArchive(endpoint: string, storageUrn: string): Promise<Array
   }
 
   const contentType = response.headers.get('content-type');
-  if (!contentType || (!contentType.includes('x-tar') && !contentType.includes('gzip'))) {
+  if (
+    !contentType ||
+    (!contentType.includes('x-tar') && !contentType.includes('gzip') && !contentType.includes('octet-stream'))
+  ) {
     throw new Error(`Unexpected content type: ${contentType} from ${endpoint}`);
   }
 

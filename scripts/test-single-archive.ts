@@ -86,7 +86,10 @@ async function main() {
       }
 
       const contentType = response.headers.get('content-type');
-      if (!contentType || (!contentType.includes('x-tar') && !contentType.includes('gzip'))) {
+      if (
+        !contentType ||
+        (!contentType.includes('x-tar') && !contentType.includes('gzip') && !contentType.includes('octet-stream'))
+      ) {
         console.log(`Unexpected content type, skipping.`);
         console.log();
         continue;
