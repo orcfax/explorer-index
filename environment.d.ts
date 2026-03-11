@@ -12,6 +12,8 @@ declare global {
       SECONDARY_ARWEAVE_ENDPOINT: string;
       PRIVATE_XERBERUS_API_KEY: string;
       PRIVATE_XERBERUS_USER_EMAIL: string;
+      ARCHIVE_RETRY_HOURS: string;
+      ARCHIVE_AGE_THRESHOLD_MINUTES?: string;
     }
   }
 }

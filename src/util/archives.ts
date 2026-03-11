@@ -28,7 +28,7 @@ export async function indexArchives(network: Network, facts: FactStatement[]) {
   // Set a concurrency limit. Adjust as needed based on performance and resource constraints.
   const limit = pLimit(5);
 
-  const failedFacts: { fact_urn: string; storage_urn: string }[] = [];
+  const failedFacts: { fact_urn: string; storage_urn: string; validation_date: Date }[] = [];
 
   // Define the task for a single fact
   const processFact = async (fact: FactStatement, index: number) => {
@@ -41,7 +41,11 @@ export async function indexArchives(network: Network, facts: FactStatement[]) {
 
     const files = await getArchiveFiles(fact);
     if (!files) {
-      failedFacts.push({ fact_urn: fact.fact_urn, storage_urn: fact.storage_urn });
+      failedFacts.push({
+        fact_urn: fact.fact_urn,
+        storage_urn: fact.storage_urn,
+        validation_date: fact.validation_date
+      });
       return null;
     }
 
@@ -74,10 +78,22 @@ export async function indexArchives(network: Network, facts: FactStatement[]) {
 
   console.info(`* * Indexed archives for ${successfulArchives.length} of ${facts.length} facts.`);
 
-  // Send a single batched error for all failed archive fetches
+  // Separate failed facts into recent (expected — Arweave still processing) vs stale (unexpected)
   if (failedFacts.length > 0) {
-    const urnList = failedFacts.map((f) => `  - ${f.fact_urn} (${f.storage_urn})`).join('\n');
-    logError(`Failed to fetch ${failedFacts.length} archive(s) from Arweave for ${network.name}:\n${urnList}`);
+    const thresholdMinutes = Number(process.env.ARCHIVE_AGE_THRESHOLD_MINUTES) || 120;
+    const AGE_THRESHOLD_MS = thresholdMinutes * 60 * 1000;
+    const now = Date.now();
+    const stale = failedFacts.filter((f) => now - f.validation_date.getTime() > AGE_THRESHOLD_MS);
+    const recent = failedFacts.length - stale.length;
+
+    if (recent > 0) {
+      console.warn(`Arweave still processing ${recent} archives for ${network.name}`);
+    }
+
+    if (stale.length > 0) {
+      const urnList = stale.map((f) => `  - ${f.fact_urn} (${f.storage_urn})`).join('\n');
+      logError(`Failed to fetch ${stale.length} archive(s) from Arweave for ${network.name}:\n${urnList}`);
+    }
   }
 }
 
