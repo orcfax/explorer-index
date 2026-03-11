@@ -49,8 +49,8 @@ export async function indexFactStatements(
             `Error indexing fact statement: ${fact.fact_urn} from feed ${fact.feed} on network ${fact.network === 'l1ppggh4ls079w9' ? 'Mainnet' : 'Preview'} --- ${JSON.stringify(error?.response?.data, null, 2)}`,
             error
           );
+          throw error;
         }
-        throw error;
       });
   });
 

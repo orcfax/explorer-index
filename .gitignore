@@ -32,3 +32,6 @@ pocketbase_0.20.2_darwin_amd64
 
 # Scripts and export artifacts
 scripts/*.json
+
+# Agents
+.claude/plans

@@ -6,3 +6,4 @@ scripts/
 .env.*
 *.log
 .DS_Store
+.claude
