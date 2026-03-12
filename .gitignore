@@ -35,3 +35,4 @@ scripts/*.json
 
 # Agents
 .claude/plans
+.claude/settings.local.json

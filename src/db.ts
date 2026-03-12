@@ -145,16 +145,16 @@ export async function deleteIndex(network: Network) {
 }
 
 function isFactAlreadyIndexed(error: unknown): boolean {
-  if (
-    error instanceof ClientResponseError &&
-    error.response.code === 400 &&
-    Object.values(error.response.data).some(
-      (value: unknown) =>
-        typeof value === 'object' && value !== null && 'code' in value && value?.code === 'validation_not_unique'
-    )
-  )
-    return true;
-  else return false;
+  const err = error as ClientResponseError;
+  const data = err?.response?.data;
+  if (!data || typeof data !== 'object') return false;
+  return Object.values(data).some(
+    (value: unknown) =>
+      typeof value === 'object' &&
+      value !== null &&
+      'code' in value &&
+      (value as Record<string, unknown>).code === 'validation_not_unique'
+  );
 }
 
 export async function updateNetwork(network: Partial<DBNetwork>) {
